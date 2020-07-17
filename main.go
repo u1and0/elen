@@ -51,12 +51,6 @@ func main() {
 		return // Exit with version info
 	}
 
-	// b, err := ioutil.ReadFile("data/20200627_180505.txt")
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "cannot read a file: %s", err)
-	// 	os.Exit(1)
-	// }
-
 	filename := "data/20200627_180505.txt"
 	config, content, err := readTrace(filename)
 	if err != nil {
@@ -64,19 +58,9 @@ func main() {
 	}
 	fmt.Println(config)
 	fmt.Println(content[0], content[len(content)-1])
-	// c := content[1 : len(content)-1]
-	// fmt.Println(c)
-
-	// lines := string(b)
-	// lines := strings.Split(string(b), "\n")
-	// for _, l := range lines {
-	// 	fmt.Println(l)
-	// }
-	// st := strings.SplitN(string(b), "\n", 1)
-	// df := dataframe.ReadCSV(content, delimiter(`\t`))
-	// fmt.Println(st[0])
 	fmt.Println(field)
 }
+
 func (i *arrayField) String() string {
 	// change this, this is just can example to satisfy the interface
 	return "my string representation"
