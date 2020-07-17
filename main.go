@@ -41,16 +41,6 @@ var (
 	field arrayField
 )
 
-func (i *arrayField) String() string {
-	// change this, this is just can example to satisfy the interface
-	return "my string representation"
-}
-
-func (i *arrayField) Set(value string) error {
-	*i = append(*i, strings.TrimSpace(value))
-	return nil
-}
-
 func main() {
 	flag.BoolVar(&showVersion, "v", false, "show version")
 	flag.Var(&field, "f", "Field range such as (50-100)")
@@ -68,42 +58,10 @@ func main() {
 	// }
 
 	filename := "data/20200627_180505.txt"
-	file, err := os.Open(filename)
+	config, content, err := readTrace(filename)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-
-	var (
-		content []string
-		config  string
-		isConf  = true
-	)
-	for {
-		line, isPrefix, err := reader.ReadLine()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			fmt.Println(err)
-		}
-		if isConf {
-			config = string(line)
-			isConf = false
-			continue
-		}
-		s := string(bytes.TrimSpace(line))
-		ss := strings.Replace(s, " ", ",", 1) // Trim whitespace, Middle space=>,
-		sss := strings.Split(ss, ",")         // split delim ,
-		ssss := strings.TrimSpace(sss[1])     // Get second column
-		content = append(content, ssss)
-		if !isPrefix {
-			fmt.Println()
-		}
-	}
-	content = content[:len(content)-1]
 	fmt.Println(config)
 	fmt.Println(content[0], content[len(content)-1])
 	// c := content[1 : len(content)-1]
@@ -118,4 +76,53 @@ func main() {
 	// df := dataframe.ReadCSV(content, delimiter(`\t`))
 	// fmt.Println(st[0])
 	fmt.Println(field)
+}
+func (i *arrayField) String() string {
+	// change this, this is just can example to satisfy the interface
+	return "my string representation"
+}
+
+func (i *arrayField) Set(value string) error {
+	*i = append(*i, strings.TrimSpace(value))
+	return nil
+}
+
+func readTrace(filename string) (config string, content []string, err error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	var (
+		line     []byte
+		isPrefix bool
+		isConf   = true
+	)
+	for {
+		line, isPrefix, err = reader.ReadLine()
+		if err == io.EOF {
+			err = nil
+			break
+		}
+		if err != nil {
+			return
+		}
+		if isConf { // First line is configure
+			config = string(line)
+			isConf = false
+			continue
+		}
+		s := string(bytes.TrimSpace(line))
+		ss := strings.Replace(s, " ", ",", 1) // Trim whitespace, Middle space=>,
+		sss := strings.Split(ss, ",")         // split delim ,
+		ssss := strings.TrimSpace(sss[1])     // Get second column
+		content = append(content, ssss)
+		if !isPrefix {
+			fmt.Println()
+		}
+	}
+	content = content[:len(content)-1] // chomp #<eof>
+	return
 }
