@@ -19,6 +19,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -57,5 +59,12 @@ func main() {
 		return // Exit with version info
 	}
 
+	b, err := ioutil.ReadFile("data/20200627_180505.txt")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cannot read a file: %s", err)
+		os.Exit(1)
+	}
+	lines := string(b)
+	fmt.Println(lines)
 	fmt.Println(field)
 }
