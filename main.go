@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -71,7 +72,7 @@ func (i *arrayField) Set(value string) error {
 	return nil
 }
 
-func readTrace(filename string) (config string, content []string, err error) {
+func readTrace(filename string) (config string, content []float64, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return
@@ -83,6 +84,7 @@ func readTrace(filename string) (config string, content []string, err error) {
 		line     []byte
 		isPrefix bool
 		isConf   = true
+		f        float64
 	)
 	for {
 		line, isPrefix, err = reader.ReadLine()
@@ -102,11 +104,15 @@ func readTrace(filename string) (config string, content []string, err error) {
 		ss := strings.Replace(s, " ", ",", 1) // Trim whitespace, Middle space=>,
 		sss := strings.Split(ss, ",")         // split delim ,
 		ssss := strings.TrimSpace(sss[1])     // Get second column
-		content = append(content, ssss)
+		f, err = strconv.ParseFloat(ssss, 64)
+		if err != nil {
+			err = nil
+			break
+		}
+		content = append(content, f)
 		if !isPrefix {
 			fmt.Println()
 		}
 	}
-	content = content[:len(content)-1] // chomp #<eof>
 	return
 }
