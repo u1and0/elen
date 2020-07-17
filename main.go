@@ -58,8 +58,20 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(config)
-	fmt.Println(content[0], content[len(content)-1])
 	fmt.Println(field)
+	for _, f := range field {
+		i0, i1 := parseField(f)
+		for i := i0; i < i1; i++ {
+			fmt.Println(content[i])
+		}
+	}
+}
+
+func parseField(s string) (i0 int, i1 int) {
+	ss := strings.Split(s, "-")
+	i0, _ = strconv.Atoi(ss[0])
+	i1, _ = strconv.Atoi(ss[1])
+	return
 }
 
 func (i *arrayField) String() string {
