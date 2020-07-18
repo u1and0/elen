@@ -60,17 +60,23 @@ func main() {
 	fmt.Println(config)
 	fmt.Println(field)
 	for _, f := range field {
-		i0, i1 := parseField(f)
-		for i := i0; i < i1; i++ {
+		mn, mx, err := parseField(f)
+		if err != nil {
+			panic(err)
+		}
+		for i := mn; i < mx; i++ {
 			fmt.Println(content[i])
 		}
 	}
 }
 
-func parseField(s string) (i0 int, i1 int) {
+func parseField(s string) (i0, i1 int, err error) {
 	ss := strings.Split(s, "-")
-	i0, _ = strconv.Atoi(ss[0])
-	i1, _ = strconv.Atoi(ss[1])
+	i0, err = strconv.Atoi(ss[0])
+	i1, err = strconv.Atoi(ss[1])
+	if i0 > i1 {
+		err = fmt.Errorf("Error: Must be lower %d than %d", i0, i1)
+	}
 	return
 }
 
