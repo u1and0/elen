@@ -30,6 +30,9 @@ import (
 // Created so that multiple inputs can be accecpted
 type arrayField []string
 
+// configMap
+type configMap map[string]string
+
 const (
 	// VERSION info
 	VERSION = "v0.0.0"
@@ -70,6 +73,23 @@ func main() {
 	}
 }
 
+// parseConfig convert first line of data to config map
+func parseConfig(s string) configMap {
+	config := make(configMap)
+	sarray := strings.Split(s, ";")
+	// snip # 20200627_180505 *RST & *CLS
+	// chomp last new line
+	sa := sarray[2 : len(sarray)-1]
+	for _, e := range sa {
+		kv := strings.Fields(e)
+		fmt.Println(kv[0])
+		fmt.Println(strings.Join(kv[1:], " "))
+		config[kv[0]] = strings.Join(kv[1:], " ")
+	}
+	return config
+}
+
+// parseField convert -f option to 2 int pair
 func parseField(s string) (i0, i1 int, err error) {
 	ss := strings.Split(s, "-")
 	i0, err = strconv.Atoi(ss[0])
@@ -90,7 +110,7 @@ func (i *arrayField) Set(value string) error {
 	return nil
 }
 
-func readTrace(filename string) (config string, content []float64, err error) {
+func readTrace(filename string) (config configMap, content []float64, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return
@@ -114,15 +134,13 @@ func readTrace(filename string) (config string, content []float64, err error) {
 			return
 		}
 		if isConf { // First line is configure
-			config = string(line)
+			config = parseConfig(string(line))
 			isConf = false
 			continue
 		}
-		s := string(bytes.TrimSpace(line))
-		ss := strings.Replace(s, " ", ",", 1) // Trim whitespace, Middle space=>,
-		sss := strings.Split(ss, ",")         // split delim ,
-		ssss := strings.TrimSpace(sss[1])     // Get second column
-		f, err = strconv.ParseFloat(ssss, 64)
+		s := string(bytes.TrimSpace(line)) // Trim prefix/surfix-whitespace
+		ss := strings.Fields(s)            // Trim Middle whitespace then return []string
+		f, err = strconv.ParseFloat(ss[1], 64)
 		if err != nil {
 			err = nil
 			break
