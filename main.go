@@ -108,16 +108,20 @@ func parseField(s string) (i0, i1 int, err error) {
 	return
 }
 
+// arrayField.String sets multiple -f flag
 func (i *arrayField) String() string {
 	// change this, this is just can example to satisfy the interface
 	return "my string representation"
 }
 
+// arrayField.Set sets multiple -f flag
 func (i *arrayField) Set(value string) error {
 	*i = append(*i, strings.TrimSpace(value))
 	return nil
 }
 
+// readTrace read from a filename to `config` from first line,
+// `content` from no # line.
 func readTrace(filename string) (config configMap, content []float64, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
