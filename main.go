@@ -43,33 +43,37 @@ var (
 	showVersion bool
 	// field code
 	field arrayField
+	// usecol is column of using calculation
+	usecol int
 )
 
 func main() {
-	flag.BoolVar(&showVersion, "v", false, "show version")
-	flag.Var(&field, "f", "Field range such as (50-100)")
+	flag.BoolVar(&showVersion, "v", false, "Show version")
+	flag.Var(&field, "f", "Field range such as -f 50-100")
+	flag.IntVar(&usecol, "c", 1, "Column of using calculation")
 	flag.Parse()
-
 	if showVersion {
 		fmt.Println("elen version:", VERSION)
 		return // Exit with version info
 	}
 
-	filename := "data/20200627_180505.txt"
-	config, content, err := readTrace(filename)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(config)
-	fmt.Println(field)
-	for _, f := range field {
-		mn, mx, err := parseField(f)
+	for _, filename := range flag.Args() {
+		config, content, err := readTrace(filename)
 		if err != nil {
 			panic(err)
 		}
-		for i := mn; i < mx; i++ {
-			fmt.Println(content[i])
+		fmt.Println(config)
+		fmt.Println(field)
+		for _, f := range field {
+			mn, mx, err := parseField(f)
+			if err != nil {
+				panic(err)
+			}
+			for i := mn; i <= mx; i++ {
+				fmt.Println(content[i])
+			}
 		}
+
 	}
 }
 
@@ -138,11 +142,13 @@ func readTrace(filename string) (config configMap, content []float64, err error)
 			isConf = false
 			continue
 		}
+		if bytes.HasPrefix(line, []byte("#")) { // # <eof>
+			return
+		}
 		s := string(bytes.TrimSpace(line)) // Trim prefix/surfix-whitespace
 		ss := strings.Fields(s)            // Trim Middle whitespace then return []string
-		f, err = strconv.ParseFloat(ss[1], 64)
+		f, err = strconv.ParseFloat(ss[usecol], 64)
 		if err != nil {
-			err = nil
 			break
 		}
 		content = append(content, f)
