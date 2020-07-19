@@ -78,16 +78,16 @@ func main() {
 }
 
 // parseConfig convert first line of data to config map
-func parseConfig(s string) configMap {
+func parseConfig(b []byte) configMap {
 	config := make(configMap)
-	sarray := strings.Split(s, ";")
+	sarray := bytes.Split(b, []byte(";"))
 	// snip # 20200627_180505 *RST & *CLS
 	// chomp last new line
 	sa := sarray[2 : len(sarray)-1]
 	for _, e := range sa {
-		kv := strings.Fields(e)
-		fmt.Println(kv[0])
-		fmt.Println(strings.Join(kv[1:], " "))
+		kv := strings.Fields(string(e))
+		// fmt.Println(kv[0])
+		// fmt.Println(bytes.Join(kv[1:], " "))
 		config[kv[0]] = strings.Join(kv[1:], " ")
 	}
 	return config
@@ -138,16 +138,16 @@ func readTrace(filename string) (config configMap, content []float64, err error)
 			return
 		}
 		if isConf { // First line is configure
-			config = parseConfig(string(line))
+			config = parseConfig(line)
 			isConf = false
 			continue
 		}
 		if bytes.HasPrefix(line, []byte("#")) { // # <eof>
 			return
 		}
-		s := string(bytes.TrimSpace(line)) // Trim prefix/surfix-whitespace
-		ss := strings.Fields(s)            // Trim Middle whitespace then return []string
-		f, err = strconv.ParseFloat(ss[usecol], 64)
+		// Trim Prefix/Surfix/Middle whitespace then return []string
+		bb := bytes.Fields(bytes.TrimSpace(line))
+		f, err = strconv.ParseFloat(string(bb[usecol]), 64)
 		if err != nil {
 			break
 		}
