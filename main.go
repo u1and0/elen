@@ -86,8 +86,6 @@ func parseConfig(b []byte) configMap {
 	sa := sarray[2 : len(sarray)-1]
 	for _, e := range sa {
 		kv := strings.Fields(string(e))
-		// fmt.Println(kv[0])
-		// fmt.Println(bytes.Join(kv[1:], " "))
 		config[kv[0]] = strings.Join(kv[1:], " ")
 	}
 	return config
@@ -130,11 +128,14 @@ func readTrace(filename string) (config configMap, content []float64, err error)
 	)
 	for {
 		line, isPrefix, err = reader.ReadLine()
-		if err == io.EOF {
-			err = nil
-			break
+		if bytes.HasPrefix(line, []byte("#")) { // # <eof> then break
+			return
 		}
-		if err != nil {
+		if err == io.EOF { // if EOF then finish func
+			err = nil
+			return // might not work because HasPrefix([]byte("#"))
+		}
+		if err != nil { // if error at ReadLine then finish func
 			return
 		}
 		if isConf { // First line is configure
@@ -142,19 +143,15 @@ func readTrace(filename string) (config configMap, content []float64, err error)
 			isConf = false
 			continue
 		}
-		if bytes.HasPrefix(line, []byte("#")) { // # <eof>
-			return
-		}
-		// Trim Prefix/Surfix/Middle whitespace then return []string
+		// Trim Prefix/Surfix/Middle whitespace
 		bb := bytes.Fields(bytes.TrimSpace(line))
 		f, err = strconv.ParseFloat(string(bb[usecol]), 64)
 		if err != nil {
-			break
+			return
 		}
 		content = append(content, f)
 		if !isPrefix {
 			fmt.Println()
 		}
 	}
-	return
 }

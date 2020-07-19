@@ -4,12 +4,13 @@ import (
 	"testing"
 )
 
-func TestLocateStats(t *testing.T) {
+func Test_readTrace(t *testing.T) {
 	filename := "data/20200627_180505.txt"
 	actualConf, actualCont, err := readTrace(filename)
 	if err != nil {
 		panic(err)
 	}
+
 	// Config test
 	config := map[string]string{
 		":INP:COUP":              "DC",
@@ -27,20 +28,20 @@ func TestLocateStats(t *testing.T) {
 		":DISP:WIND:TRAC:Y:RLEV": "-30 dBm",
 	}
 	for k, v := range actualConf {
-		if v != config[k] {
-			t.Fatalf("got: %vwant: %v", v, config[k])
+		if config[k] != v {
+			t.Fatalf("got: %v want: %v", v, config[k])
 		}
 	}
+
 	// Content test
 	content0 := -93.21
 	actualCont0 := actualCont[0]
 	if actualCont0 != content0 {
-		t.Fatalf("got: %v want: %v", actualCont0, content0)
+		t.Fatalf("got: %v want: %v\ndump all: %v", actualCont0, content0, actualCont)
 	}
 	content1 := -90.08
 	actualCont1 := actualCont[len(actualCont)-1]
 	if actualCont1 != content1 {
-		t.Fatalf("got: %v want: %v", actualCont1, content1)
+		t.Fatalf("got: %v want: %v\ndump all: %v", actualCont1, content1, actualCont)
 	}
-
 }
