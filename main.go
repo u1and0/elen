@@ -38,6 +38,13 @@ type configMap map[string]string
 // content
 type contentArray []float64
 
+// OutRow is a output line
+type OutRow struct {
+	Filename string
+	Center   string
+	Fields   []float64
+}
+
 const (
 	// VERSION info
 	VERSION = "v0.0.0"
@@ -62,23 +69,27 @@ func main() {
 		return // Exit with version info
 	}
 
-	for _, filename := range flag.Args() {
+	files := flag.Args()
+	out := make([]OutRow, len(files))
+	for i, filename := range files {
+		out[i].Filename = filename
 		config, content, err := readTrace(filename)
 		if err != nil {
 			panic(err)
 		}
 		fmt.Println(config)
 		fmt.Println(field)
+		out[i].Center = config[":FREQ:CENT"]
 		for _, f := range field {
 			m, n, err := parseField(f)
 			if err != nil {
 				panic(err)
 			}
 			mw := content.signalBand(m, n)
-			fmt.Println(mw)
+			out[i].Fields = append(out[i].Fields, mw)
 		}
-
 	}
+	fmt.Printf("%#v", out)
 }
 
 // signalBand convert mWatt then sum between band
