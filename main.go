@@ -23,6 +23,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -33,6 +34,9 @@ type arrayField []string
 
 // configMap
 type configMap map[string]string
+
+// content
+type contentArray []float64
 
 const (
 	// VERSION info
@@ -66,16 +70,23 @@ func main() {
 		fmt.Println(config)
 		fmt.Println(field)
 		for _, f := range field {
-			mn, mx, err := parseField(f)
+			m, n, err := parseField(f)
 			if err != nil {
 				panic(err)
 			}
-			for i := mn; i <= mx; i++ {
-				fmt.Println(content[i])
-			}
+			mw := content.signalBand(m, n)
+			fmt.Println(mw)
 		}
 
 	}
+}
+
+// signalBand convert mWatt then sum between band
+func (c contentArray) signalBand(m, n int) (mw float64) {
+	for i := m; i <= n; i++ {
+		mw += db2mw(c[i])
+	}
+	return
 }
 
 // parseConfig convert first line of data to config map
@@ -120,9 +131,14 @@ func (i *arrayField) Set(value string) error {
 	return nil
 }
 
+// db2mw returns dB convert to mWatt
+func db2mw(db float64) float64 {
+	return math.Pow(10, db/10)
+}
+
 // readTrace read from a filename to `config` from first line,
 // `content` from no # line.
-func readTrace(filename string) (config configMap, content []float64, err error) {
+func readTrace(filename string) (config configMap, content contentArray, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return
