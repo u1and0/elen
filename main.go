@@ -19,6 +19,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -93,6 +94,11 @@ func parseConfig(b []byte) configMap {
 
 // parseField convert -f option to 2 int pair
 func parseField(s string) (i0, i1 int, err error) {
+	if !strings.Contains(s, "-") {
+		err = errors.New("Error: Field flag -f " + s +
+			" not contains range \"-\", use int-int")
+		return
+	}
 	ss := strings.Split(s, "-")
 	i0, err = strconv.Atoi(ss[0])
 	i1, err = strconv.Atoi(ss[1])
