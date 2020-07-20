@@ -28,28 +28,12 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 )
-
-// Created so that multiple inputs can be accecpted
-type arrayField []string
-
-// configMap
-type configMap map[string]string
-
-// content
-type contentArray []float64
-
-// OutRow is a output line
-type OutRow struct {
-	Filename string
-	Datetime string
-	Center   string
-	Fields   []float64
-}
 
 const (
 	// VERSION info
-	VERSION = "v0.0.0"
+	VERSION = "v1.0.0"
 )
 
 var (
@@ -61,6 +45,26 @@ var (
 	usecol int
 	// debug mode
 	debug bool
+	// wg wait goroutine
+	wg sync.WaitGroup
+)
+
+type (
+	// arrayField created so that multiple inputs can be accecpted
+	arrayField []string
+	// configMap is a first line of data
+	configMap map[string]string
+	// contentArray read from data
+	contentArray []float64
+	// OutRows is a slice of OutRow
+	OutRows []OutRow
+	// OutRow is a output line
+	OutRow struct {
+		Filename string
+		Datetime string
+		Center   string
+		Fields   []float64
+	}
 )
 
 func main() {
@@ -75,42 +79,53 @@ func main() {
 	}
 
 	files := flag.Args()
-	out := make([]OutRow, len(files))
+	out := make(OutRows, len(files))
 	for _, filename := range files {
-		o := OutRow{}
-		o.Filename = filename
-		o.Datetime = parseDatetime(filepath.Base(filename))
-		config, content, err := readTrace(filename)
+		wg.Add(1)
+		go func(f string) {
+			defer wg.Done()
+			out.writeOutRow(f)
+		}(filename)
+	}
+	wg.Wait()
+}
+
+// writeOutRow is print result of main routine
+func (out OutRows) writeOutRow(s string) error {
+	o := OutRow{}
+	o.Filename = s
+	o.Datetime = parseDatetime(filepath.Base(s))
+	config, content, err := readTrace(s)
+	if err != nil {
+		return err
+	}
+	if debug {
+		fmt.Printf("[ CONFIG ]:%v\n", config)
+		fmt.Printf("[ CONTENT ]:%v\n", content)
+		fmt.Printf("[ FIELD ]:%v\n", field)
+	}
+	o.Center = config[":FREQ:CENT"]
+	for _, f := range field {
+		m, n, err := parseField(f)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		if debug {
-			fmt.Printf("[ CONFIG ]:%v\n", config)
-			fmt.Printf("[ CONTENT ]:%v\n", content)
-			fmt.Printf("[ FIELD ]:%v\n", field)
-		}
-		o.Center = config[":FREQ:CENT"]
-		for _, f := range field {
-			m, n, err := parseField(f)
-			if err != nil {
-				panic(err)
-			}
-			mw := content.signalBand(m, n)
-			o.Fields = append(o.Fields, mw)
-		}
-		out = append(out, o)
-		// for debug print format
-		if debug {
-			fmt.Fprintf(os.Stderr, "[ TYPE OUTROW ]%v\n", o)
-			continue // print not standard output
-		}
-		// for normal print format
+		mw := content.signalBand(m, n)
+		o.Fields = append(o.Fields, mw)
+	}
+	out = append(out, o)
+	// for debug print format
+	if debug {
+		fmt.Fprintf(os.Stderr, "[ TYPE OUTROW ]%v\n", o)
+		// continue // print not standard output
+	} else { // for normal print format
 		fmt.Printf("%s,%s,", o.Datetime, o.Center)
 		for _, f := range o.Fields {
 			fmt.Printf("%e,", f)
 		}
 		fmt.Println()
 	}
+	return err
 }
 
 // signalBand convert mWatt then sum between band
