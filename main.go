@@ -25,6 +25,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -41,6 +42,7 @@ type contentArray []float64
 // OutRow is a output line
 type OutRow struct {
 	Filename string
+	Datetime string
 	Center   string
 	Fields   []float64
 }
@@ -76,6 +78,7 @@ func main() {
 	out := make([]OutRow, len(files))
 	for i, filename := range files {
 		out[i].Filename = filename
+		out[i].Datetime = parseDatetime(filepath.Base(filename))
 		config, content, err := readTrace(filename)
 		if err != nil {
 			panic(err)
@@ -94,8 +97,8 @@ func main() {
 			mw := content.signalBand(m, n)
 			out[i].Fields = append(out[i].Fields, mw)
 		}
+		fmt.Printf("%v\n", out[i])
 	}
-	fmt.Printf("%v", out)
 }
 
 // signalBand convert mWatt then sum between band
@@ -118,6 +121,13 @@ func parseConfig(b []byte) configMap {
 		config[kv[0]] = strings.Join(kv[1:], " ")
 	}
 	return config
+}
+
+// parseFilename convert a filename as datetime (%Y-%m-%d %H:%M:%S) format
+func parseDatetime(s string) string {
+	// layout : 2006-01-02 15:05:12
+	return fmt.Sprintf("%s-%s-%s %s:%s:%s",
+		s[0:4], s[4:6], s[6:8], s[9:11], s[11:13], s[13:15])
 }
 
 // parseField convert -f option to 2 int pair
