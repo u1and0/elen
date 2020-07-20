@@ -76,9 +76,10 @@ func main() {
 
 	files := flag.Args()
 	out := make([]OutRow, len(files))
-	for i, filename := range files {
-		out[i].Filename = filename
-		out[i].Datetime = parseDatetime(filepath.Base(filename))
+	for _, filename := range files {
+		o := OutRow{}
+		o.Filename = filename
+		o.Datetime = parseDatetime(filepath.Base(filename))
 		config, content, err := readTrace(filename)
 		if err != nil {
 			panic(err)
@@ -88,16 +89,17 @@ func main() {
 			fmt.Printf("[ CONTENT ]:%v\n", content)
 			fmt.Printf("[ FIELD ]:%v\n", field)
 		}
-		out[i].Center = config[":FREQ:CENT"]
+		o.Center = config[":FREQ:CENT"]
 		for _, f := range field {
 			m, n, err := parseField(f)
 			if err != nil {
 				panic(err)
 			}
 			mw := content.signalBand(m, n)
-			out[i].Fields = append(out[i].Fields, mw)
+			o.Fields = append(o.Fields, mw)
 		}
-		fmt.Printf("%v\n", out[i])
+		out = append(out, o)
+		fmt.Printf("%v\n", o)
 	}
 }
 
