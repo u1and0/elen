@@ -99,7 +99,17 @@ func main() {
 			o.Fields = append(o.Fields, mw)
 		}
 		out = append(out, o)
-		fmt.Printf("%v\n", o)
+		// for debug print format
+		if debug {
+			fmt.Fprintf(os.Stderr, "[ TYPE OUTROW ]%v\n", o)
+			continue // print not standard output
+		}
+		// for normal print format
+		fmt.Printf("%s,%s,", o.Datetime, o.Center)
+		for _, f := range o.Fields {
+			fmt.Printf("%e,", f)
+		}
+		fmt.Println()
 	}
 }
 
@@ -199,9 +209,6 @@ func readTrace(filename string) (config configMap, content contentArray, err err
 		// Trim Prefix/Surfix/Middle whitespace
 		bb := bytes.Fields(bytes.TrimSpace(line))
 		f, err = strconv.ParseFloat(string(bb[usecol]), 64)
-		if debug {
-			fmt.Printf("[ USECOL ]%v\n", usecol)
-		}
 		if err != nil {
 			return
 		}
