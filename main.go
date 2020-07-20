@@ -57,12 +57,15 @@ var (
 	field arrayField
 	// usecol is column of using calculation
 	usecol int
+	// debug mode
+	debug bool
 )
 
 func main() {
 	flag.BoolVar(&showVersion, "v", false, "Show version")
 	flag.Var(&field, "f", "Field range such as -f 50-100")
 	flag.IntVar(&usecol, "c", 1, "Column of using calculation")
+	flag.BoolVar(&debug, "debug", false, "Debug mode")
 	flag.Parse()
 	if showVersion {
 		fmt.Println("elen version:", VERSION)
@@ -77,8 +80,11 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(config)
-		fmt.Println(field)
+		if debug {
+			fmt.Printf("[ CONFIG ]:%v\n", config)
+			fmt.Printf("[ CONTENT ]:%v\n", content)
+			fmt.Printf("[ FIELD ]:%v\n", field)
+		}
 		out[i].Center = config[":FREQ:CENT"]
 		for _, f := range field {
 			m, n, err := parseField(f)
@@ -89,7 +95,7 @@ func main() {
 			out[i].Fields = append(out[i].Fields, mw)
 		}
 	}
-	fmt.Printf("%#v", out)
+	fmt.Printf("%v", out)
 }
 
 // signalBand convert mWatt then sum between band
@@ -158,37 +164,35 @@ func readTrace(filename string) (config configMap, content contentArray, err err
 
 	reader := bufio.NewReader(file)
 	var (
-		line     []byte
-		isPrefix bool
-		isConf   = true
-		f        float64
+		line   []byte
+		isConf = true
+		f      float64
 	)
 	for {
-		line, isPrefix, err = reader.ReadLine()
-		if bytes.HasPrefix(line, []byte("#")) { // # <eof> then break
-			return
-		}
-		if err == io.EOF { // if EOF then finish func
-			err = nil
-			return // might not work because HasPrefix([]byte("#"))
-		}
-		if err != nil { // if error at ReadLine then finish func
-			return
-		}
+		line, _, err = reader.ReadLine()
 		if isConf { // First line is configure
 			config = parseConfig(line)
 			isConf = false
 			continue
 		}
+		if bytes.HasPrefix(line, []byte("#")) { // # <eof> then break
+			return
+		}
+		if err == io.EOF { // if EOF then finish func
+			return // might not work because HasPrefix([]byte("#"))
+		}
+		if err != nil { // if error at ReadLine then finish func
+			return
+		}
 		// Trim Prefix/Surfix/Middle whitespace
 		bb := bytes.Fields(bytes.TrimSpace(line))
 		f, err = strconv.ParseFloat(string(bb[usecol]), 64)
+		if debug {
+			fmt.Printf("[ USECOL ]%v\n", usecol)
+		}
 		if err != nil {
 			return
 		}
 		content = append(content, f)
-		if !isPrefix {
-			fmt.Println()
-		}
 	}
 }
