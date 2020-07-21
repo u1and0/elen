@@ -23,6 +23,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -47,6 +48,8 @@ var (
 	debug bool
 	// wg wait goroutine
 	wg sync.WaitGroup
+	// logger print to stdout
+	logger = log.New(os.Stdout, "", 0)
 )
 
 type (
@@ -100,9 +103,9 @@ func (out OutRows) writeOutRow(s string) error {
 		return err
 	}
 	if debug {
-		fmt.Printf("[ CONFIG ]:%v\n", config)
-		fmt.Printf("[ CONTENT ]:%v\n", content)
-		fmt.Printf("[ FIELD ]:%v\n", field)
+		logger.Printf("[ CONFIG ]:%v\n", config)
+		logger.Printf("[ CONTENT ]:%v\n", content)
+		logger.Printf("[ FIELD ]:%v\n", field)
 	}
 	o.Center = config[":FREQ:CENT"]
 	for _, f := range field {
@@ -114,18 +117,29 @@ func (out OutRows) writeOutRow(s string) error {
 		o.Fields = append(o.Fields, mw)
 	}
 	out = append(out, o)
-	// for debug print format
+	// Debug print format
 	if debug {
-		fmt.Fprintf(os.Stderr, "[ TYPE OUTROW ]%v\n", o)
+		logger.Printf("[ TYPE OUTROW ]%v\n", o)
 		// continue // print not standard output
-	} else { // for normal print format
-		fmt.Printf("%s,%s,", o.Datetime, o.Center)
-		for _, f := range o.Fields {
-			fmt.Printf("%e,", f)
-		}
-		fmt.Println()
+		return err
 	}
+	logger.Println(o)
 	return err
+}
+
+// OutRow.String
+func (o OutRow) String() string {
+	return fmt.Sprintf("%s,%s,%s",
+		o.Datetime,
+		o.Center,
+		strings.Join(func() (ss []string) {
+			for _, f := range o.Fields { // convert []float64=>[]string
+				s := strconv.FormatFloat(f, 'f', -1, 64)
+				ss = append(ss, s)
+			}
+			return
+		}(), ","),
+	)
 }
 
 // signalBand convert mWatt then sum between band
@@ -152,8 +166,7 @@ func parseConfig(b []byte) configMap {
 
 // parseFilename convert a filename as datetime (%Y-%m-%d %H:%M:%S) format
 func parseDatetime(s string) string {
-	// layout : 2006-01-02 15:05:12
-	return fmt.Sprintf("%s-%s-%s %s:%s:%s",
+	return fmt.Sprintf("%s-%s-%s %s:%s:%s", // 2006-01-02 15:05:12
 		s[0:4], s[4:6], s[6:8], s[9:11], s[11:13], s[13:15])
 }
 
