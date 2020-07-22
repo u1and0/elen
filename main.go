@@ -34,7 +34,7 @@ import (
 
 const (
 	// VERSION info
-	VERSION = "v1.0.0"
+	VERSION = "v1.1.0"
 )
 
 var (
@@ -228,10 +228,12 @@ func readTrace(filename string) (config configMap, content contentArray, err err
 			isConf = false
 			continue
 		}
-		if bytes.HasPrefix(line, []byte("#")) { // # <eof> then break
+		if bytes.HasPrefix(line, []byte("#")) {
+			// Got "# <eof>" successful terminationthen
 			return
 		}
 		if err == io.EOF { // if EOF then finish func
+			err = errors.New("error data has not <eof>")
 			return // might not work because HasPrefix([]byte("#"))
 		}
 		if err != nil { // if error at ReadLine then finish func
