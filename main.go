@@ -87,20 +87,29 @@ func main() {
 		wg.Add(1)
 		go func(f string) {
 			defer wg.Done()
-			out.writeOutRow(f)
+			o, err := writeOutRow(f)
+			if err != nil {
+				panic(err)
+			}
+			logger.Println(o)
+			out = append(out, o)
 		}(filename)
 	}
 	wg.Wait()
 }
 
 // writeOutRow is print result of main routine
-func (out OutRows) writeOutRow(s string) error {
-	o := OutRow{}
+func writeOutRow(s string) (o OutRow, err error) {
+	var (
+		config  configMap
+		content contentArray
+		m, n    int
+	)
 	o.Filename = s
 	o.Datetime = parseDatetime(filepath.Base(s))
-	config, content, err := readTrace(s)
+	config, content, err = readTrace(s)
 	if err != nil {
-		return err
+		return
 	}
 	if debug {
 		logger.Printf("[ CONFIG ]:%v\n", config)
@@ -109,27 +118,25 @@ func (out OutRows) writeOutRow(s string) error {
 	}
 	o.Center = config[":FREQ:CENT"]
 	for _, f := range field {
-		m, n, err := parseField(f)
+		m, n, err = parseField(f)
 		if err != nil {
-			return err
+			return
 		}
 		mw := content.signalBand(m, n)
 		o.Fields = append(o.Fields, mw)
 	}
-	out = append(out, o)
 	// Debug print format
 	if debug {
 		logger.Printf("[ TYPE OUTROW ]%v\n", o)
 		// continue // print not standard output
-		return err
+		return
 	}
-	logger.Println(o)
-	return err
+	return
 }
 
 // OutRow.String
 func (o OutRow) String() string {
-	return fmt.Sprintf("%s,%s,%s",
+	return fmt.Sprintf("%s,%s,%s", // comma separated
 		o.Datetime,
 		o.Center,
 		strings.Join(func() (ss []string) {
@@ -138,7 +145,7 @@ func (o OutRow) String() string {
 				ss = append(ss, s)
 			}
 			return
-		}(), ","),
+		}(), ","), // comma separated
 	)
 }
 
