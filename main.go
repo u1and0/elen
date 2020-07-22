@@ -59,8 +59,6 @@ type (
 	configMap map[string]string
 	// contentArray read from data
 	contentArray []float64
-	// OutRows is a slice of OutRow
-	OutRows []OutRow
 	// OutRow is a output line
 	OutRow struct {
 		Filename string
@@ -82,7 +80,6 @@ func main() {
 	}
 
 	files := flag.Args()
-	out := make(OutRows, len(files))
 	for _, filename := range files {
 		wg.Add(1)
 		go func(f string) {
@@ -92,7 +89,6 @@ func main() {
 				panic(err)
 			}
 			logger.Println(o)
-			out = append(out, o)
 		}(filename)
 	}
 	wg.Wait()
@@ -134,7 +130,7 @@ func writeOutRow(s string) (o OutRow, err error) {
 	return
 }
 
-// OutRow.String
+// OutRow.String print as comma separated value
 func (o OutRow) String() string {
 	return fmt.Sprintf("%s,%s,%s", // comma separated
 		o.Datetime,
