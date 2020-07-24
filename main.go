@@ -34,7 +34,7 @@ import (
 
 const (
 	// VERSION info
-	VERSION = "v1.0.0"
+	VERSION = "v1.1.0"
 )
 
 var (
@@ -59,8 +59,6 @@ type (
 	configMap map[string]string
 	// contentArray read from data
 	contentArray []float64
-	// OutRows is a slice of OutRow
-	OutRows []OutRow
 	// OutRow is a output line
 	OutRow struct {
 		Filename string
@@ -82,25 +80,37 @@ func main() {
 	}
 
 	files := flag.Args()
-	out := make(OutRows, len(files))
-	for _, filename := range files {
+	writeBuffer(files)
+}
+
+// writeBuffer print result of writeOutRow()
+func writeBuffer(a []string) {
+	for _, filename := range a {
 		wg.Add(1)
 		go func(f string) {
 			defer wg.Done()
-			out.writeOutRow(f)
+			o, err := writeOutRow(f)
+			if err != nil {
+				panic(err)
+			}
+			logger.Println(o)
 		}(filename)
 	}
 	wg.Wait()
 }
 
-// writeOutRow is print result of main routine
-func (out OutRows) writeOutRow(s string) error {
-	o := OutRow{}
+// writeOutRow return a line of processed content
+func writeOutRow(s string) (o OutRow, err error) {
+	var (
+		config  configMap
+		content contentArray
+		m, n    int
+	)
 	o.Filename = s
 	o.Datetime = parseDatetime(filepath.Base(s))
-	config, content, err := readTrace(s)
+	config, content, err = readTrace(s)
 	if err != nil {
-		return err
+		return
 	}
 	if debug {
 		logger.Printf("[ CONFIG ]:%v\n", config)
@@ -109,27 +119,25 @@ func (out OutRows) writeOutRow(s string) error {
 	}
 	o.Center = config[":FREQ:CENT"]
 	for _, f := range field {
-		m, n, err := parseField(f)
+		m, n, err = parseField(f)
 		if err != nil {
-			return err
+			return
 		}
 		mw := content.signalBand(m, n)
 		o.Fields = append(o.Fields, mw)
 	}
-	out = append(out, o)
 	// Debug print format
 	if debug {
 		logger.Printf("[ TYPE OUTROW ]%v\n", o)
 		// continue // print not standard output
-		return err
+		return
 	}
-	logger.Println(o)
-	return err
+	return
 }
 
-// OutRow.String
+// OutRow.String print as comma separated value
 func (o OutRow) String() string {
-	return fmt.Sprintf("%s,%s,%s",
+	return fmt.Sprintf("%s,%s,%s", // comma separated
 		o.Datetime,
 		o.Center,
 		strings.Join(func() (ss []string) {
@@ -138,7 +146,7 @@ func (o OutRow) String() string {
 				ss = append(ss, s)
 			}
 			return
-		}(), ","),
+		}(), ","), // comma separated
 	)
 }
 
@@ -225,10 +233,12 @@ func readTrace(filename string) (config configMap, content contentArray, err err
 			isConf = false
 			continue
 		}
-		if bytes.HasPrefix(line, []byte("#")) { // # <eof> then break
+		if bytes.HasPrefix(line, []byte("#")) {
+			// Got "# <eof>" successful terminationthen
 			return
 		}
 		if err == io.EOF { // if EOF then finish func
+			err = errors.New("error data has not <eof>")
 			return // might not work because HasPrefix([]byte("#"))
 		}
 		if err != nil { // if error at ReadLine then finish func
