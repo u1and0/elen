@@ -80,7 +80,12 @@ func main() {
 	}
 
 	files := flag.Args()
-	for _, filename := range files {
+	writeBuffer(files)
+}
+
+// writeBuffer print result of writeOutRow()
+func writeBuffer(a []string) {
+	for _, filename := range a {
 		wg.Add(1)
 		go func(f string) {
 			defer wg.Done()
@@ -94,7 +99,7 @@ func main() {
 	wg.Wait()
 }
 
-// writeOutRow is print result of main routine
+// writeOutRow return a line of processed content
 func writeOutRow(s string) (o OutRow, err error) {
 	var (
 		config  configMap
