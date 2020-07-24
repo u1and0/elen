@@ -49,3 +49,20 @@ func Test_readTrace(t *testing.T) {
 	}
 	*/
 }
+
+func bench(b *testing.B, a []string) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		writeBuffer(a)
+	}
+}
+
+func Benchmark(b *testing.B) {
+	files := []string{
+		"data/20200508_030430.txt",
+		"data/20200627_180505.txt",
+		"data/20200711_071158.txt",
+		"data/20200712_020156.txt",
+	}
+	bench(b, files)
+}
